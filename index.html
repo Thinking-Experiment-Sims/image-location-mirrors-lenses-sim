@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Location of Images in Mirrors and Lenses Lab</title>
+    <meta
+      name="description"
+      content="Interactive 11th-grade simulation to learn principal rays and image formation for lenses and mirrors."
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="https://vladimirlopez.github.io/the-thinking-experiment/assets/favicon-32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="https://vladimirlopez.github.io/the-thinking-experiment/assets/favicon-16.png"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+
+    <header class="hero shell">
+      <button id="themeToggleButton" class="theme-toggle-btn" type="button" aria-pressed="true">Switch to Light Theme</button>
+      <p class="kicker">The Thinking Experiment</p>
+      <h1>Location of Images in Mirrors and Lenses</h1>
+      <p class="subtitle">Draw each principal ray step by step and verify image location with live feedback.</p>
+    </header>
+
+    <main class="shell app-layout">
+      <section class="panel controls-panel" aria-label="Simulation controls">
+        <h2>Controls</h2>
+        <div class="controls-grid">
+          <label for="opticType">
+            Optical Element
+            <select id="opticType">
+              <option value="convexLens">Convex Lens (Converging)</option>
+              <option value="concaveLens">Concave Lens (Diverging)</option>
+              <option value="concaveMirror">Concave Mirror (Converging)</option>
+              <option value="convexMirror">Convex Mirror (Diverging)</option>
+            </select>
+          </label>
+
+          <label for="focalLength">
+            Focal Length |f|: <span id="focalValue">8.0 cm</span>
+            <input id="focalLength" type="range" min="2" max="18" step="0.5" value="8" />
+          </label>
+
+          <label for="objectDistance">
+            Object Distance do: <span id="distanceValue">16.0 cm</span>
+            <input id="objectDistance" type="range" min="2" max="36" step="0.5" value="16" />
+          </label>
+
+          <label for="objectHeight">
+            Object Height ho: <span id="heightValue">4.0 cm</span>
+            <input id="objectHeight" type="range" min="1" max="8" step="0.5" value="4" />
+          </label>
+
+          <fieldset class="ray-toggles">
+            <legend>Principal Rays</legend>
+            <label class="toggle-label" for="ray1"><input id="ray1" type="checkbox" checked /> Ray 1</label>
+            <label class="toggle-label" for="ray2"><input id="ray2" type="checkbox" /> Ray 2</label>
+            <label class="toggle-label" for="ray3"><input id="ray3" type="checkbox" /> Ray 3</label>
+          </fieldset>
+        </div>
+
+        <div class="button-row">
+          <button type="button" id="resetBtn">Reset Scenario</button>
+          <button type="button" class="ghost" id="challengeBtn">New Practice Challenge</button>
+        </div>
+        <p class="hint" id="challengePrompt">Challenge: Predict the image values before checking.</p>
+      </section>
+
+      <section class="panel visual-panel">
+        <h2>Ray Diagram Workspace</h2>
+        <svg class="scene" id="simSvg" viewBox="0 0 1000 520" role="img" aria-label="Interactive ray diagram"></svg>
+        <div class="legend" aria-label="Ray color legend">
+          <span class="legend-item ray1">Ray 1: Parallel rule</span>
+          <span class="legend-item ray2">Ray 2: Center/C ray</span>
+          <span class="legend-item ray3">Ray 3: Focus rule</span>
+          <span class="legend-item ext">Dashed: virtual extension</span>
+        </div>
+
+        <section class="practice-inline" aria-label="Practice input">
+          <h3>Practice Input</h3>
+          <div class="practice-grid">
+            <label class="practice-field" for="guessDi">
+              Your di (cm)
+              <input id="guessDi" type="number" step="0.1" placeholder="e.g., 12.5" />
+            </label>
+
+            <label class="practice-field" for="guessHi">
+              Your hi (cm)
+              <input id="guessHi" type="number" step="0.1" placeholder="e.g., -3.0" />
+            </label>
+
+            <label class="practice-field" for="guessType">
+              Your image type
+              <select id="guessType">
+                <option value="">Choose...</option>
+                <option value="real">Real</option>
+                <option value="virtual">Virtual</option>
+              </select>
+            </label>
+          </div>
+          <div class="button-row practice-actions">
+            <button type="button" class="ghost" id="checkBtn">Check Prediction</button>
+            <button type="button" class="ghost" id="revealBtn">Reveal Answer</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel metrics-panel">
+        <h2>Guided Ray Builder</h2>
+        <p class="hint" id="guideStatus">Start with Ray 1.</p>
+        <p class="instruction" id="currentInstruction"></p>
+        <ol class="step-list" id="raySteps"></ol>
+        <div class="button-row guide-row">
+          <button type="button" id="startGuideBtn">Start Guide</button>
+          <button type="button" class="ghost" id="nextGuideBtn">Next Ray</button>
+          <button type="button" class="ghost" id="showAllGuideBtn">Show Complete</button>
+          <button type="button" class="ghost" id="resetGuideBtn">Reset Guide</button>
+        </div>
+
+        <h3>Live Readout</h3>
+        <div class="metrics-grid" id="metrics"></div>
+        <p class="status" id="feedback">Enter your estimate, then compare with the model.</p>
+      </section>
+    </main>
+
+    <script src="./src/main.js"></script>
+  </body>
+</html>
