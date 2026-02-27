@@ -1,4 +1,5 @@
 const NS = "http://www.w3.org/2000/svg";
+const SMILEY_IMAGE_PATH = "./assets/smiley-face.svg";
 const VIEW = { width: 1000, height: 520, axisY: 280, opticX: 520, xMin: 20, xMax: 980, yMin: 20, yMax: 500 };
 const SCALE = { x: 13, y: 20 };
 
@@ -12,7 +13,7 @@ const OPTICS = {
       "Ray 2 (gold): from object tip through optical center; it continues straight.",
       "Ray 3 (violet): from object tip through near focus, then refract parallel to the axis."
     ],
-    finalNote: "Image tip is where refracted rays intersect."
+    finalNote: "Image location is where refracted rays intersect."
   },
   concaveLens: {
     label: "Concave Lens",
@@ -23,7 +24,7 @@ const OPTICS = {
       "Ray 2 (gold): from object tip through optical center; it continues straight.",
       "Ray 3 (violet): from object tip toward far focus, then refract parallel to axis."
     ],
-    finalNote: "Extend refracted rays backward (dashed) to find the virtual image."
+    finalNote: "Extend refracted rays backward (dashed) to locate the virtual image."
   },
   concaveMirror: {
     label: "Concave Mirror",
@@ -31,10 +32,10 @@ const OPTICS = {
     signF: 1,
     steps: [
       "Ray 1 (red): from object tip parallel to axis, then reflect through focus.",
-      "Ray 2 (gold): from object tip through C (center of curvature), then reflect back on itself.",
+      "Ray 2 (gold): from object tip through C, then reflect back on itself.",
       "Ray 3 (violet): from object tip through focus, then reflect parallel to axis."
     ],
-    finalNote: "Image tip is where reflected rays intersect (or dashed extensions for virtual cases)."
+    finalNote: "Image location is where reflected rays intersect."
   },
   convexMirror: {
     label: "Convex Mirror",
@@ -55,6 +56,11 @@ const ui = {
   focalLength: document.getElementById("focalLength"),
   objectDistance: document.getElementById("objectDistance"),
   objectHeight: document.getElementById("objectHeight"),
+  objectShape: document.getElementById("objectShape"),
+  invertObject: document.getElementById("invertObject"),
+  extraRays: document.getElementById("extraRays"),
+  extraRayCount: document.getElementById("extraRayCount"),
+  extraRayCountValue: document.getElementById("extraRayCountValue"),
   focalValue: document.getElementById("focalValue"),
   distanceValue: document.getElementById("distanceValue"),
   heightValue: document.getElementById("heightValue"),
@@ -88,6 +94,11 @@ const challenge = {
 
 const guide = {
   step: 1
+};
+
+const dragState = {
+  activeHandle: null,
+  pointerId: null
 };
 
 function applyTheme(theme) {
@@ -144,6 +155,26 @@ function pointAtX(a, b, x) {
   return { x, y: a.y + t * (b.y - a.y) };
 }
 
+function getSliderLimits(input) {
+  return {
+    min: Number(input.min),
+    max: Number(input.max)
+  };
+}
+
+function signedObjectHeightCm() {
+  const magnitude = Number(ui.objectHeight.value);
+  return ui.invertObject.checked ? -magnitude : magnitude;
+}
+
+function setObjectHeightSigned(signedHoCm) {
+  const { min, max } = getSliderLimits(ui.objectHeight);
+  const clipped = clamp(signedHoCm, -max, max);
+  const absValue = clamp(Math.abs(clipped), min, max);
+  ui.objectHeight.value = String(absValue);
+  ui.invertObject.checked = clipped < 0;
+}
+
 function computeImage(optic, doCm, fCm, hoCm) {
   const invDi = 1 / fCm - 1 / doCm;
   const isInfinity = Math.abs(invDi) < 1e-4;
@@ -178,12 +209,11 @@ function getVisibleRays() {
 }
 
 function getScenario() {
-  const opticKey = ui.opticType.value;
-  const optic = OPTICS[opticKey];
+  const optic = OPTICS[ui.opticType.value];
   const absF = Number(ui.focalLength.value);
   const fCm = optic.signF * absF;
   const doCm = Number(ui.objectDistance.value);
-  const hoCm = Number(ui.objectHeight.value);
+  const hoCm = signedObjectHeightCm();
   const image = computeImage(optic, doCm, fCm, hoCm);
 
   const objectBase = { x: VIEW.opticX - doCm * SCALE.x, y: VIEW.axisY };
@@ -206,7 +236,10 @@ function getScenario() {
     objectBase,
     objectTop,
     imageTop,
-    showRay: getVisibleRays()
+    objectShape: ui.objectShape.value,
+    showRay: getVisibleRays(),
+    showExtraRays: ui.extraRays.checked,
+    extraRayCount: Number(ui.extraRayCount.value)
   };
 }
 
@@ -246,6 +279,70 @@ function drawArrow(group, base, top, className, label) {
   });
   text.textContent = label;
   group.append(text);
+}
+
+function drawSymbol(group, base, heightCm, className, shape, label) {
+  const heightPx = heightCm * SCALE.y;
+  const scale = Math.max(Math.abs(heightPx) / 100, 0.12);
+  const sy = heightPx >= 0 ? -scale : scale;
+
+  const symbolGroup = createSvg("g", {
+    transform: `translate(${base.x} ${base.y}) scale(${scale} ${sy})`,
+    class: `${className} ${shape}-symbol`
+  });
+
+  const strokeAttrs = {
+    class: className,
+    "vector-effect": "non-scaling-stroke"
+  };
+
+  if (shape === "k") {
+    symbolGroup.append(
+      createSvg("line", { ...strokeAttrs, x1: 0, y1: 0, x2: 0, y2: 100 }),
+      createSvg("line", { ...strokeAttrs, x1: 0, y1: 50, x2: 36, y2: 18 }),
+      createSvg("line", { ...strokeAttrs, x1: 0, y1: 50, x2: 36, y2: 88 })
+    );
+  } else if (shape === "smiley") {
+    symbolGroup.append(
+      createSvg("image", {
+        href: SMILEY_IMAGE_PATH,
+        x: -40,
+        y: 10,
+        width: 80,
+        height: 80,
+        preserveAspectRatio: "xMidYMid meet",
+        class: "smiley-image"
+      }),
+      createSvg("circle", { ...strokeAttrs, cx: 0, cy: 50, r: 40, fill: "none" })
+    );
+  }
+
+  group.append(symbolGroup);
+
+  const labelNode = createSvg("text", {
+    x: base.x,
+    y: base.y - heightPx + (heightPx >= 0 ? -9 : 17),
+    class: "image-label",
+    "text-anchor": "middle"
+  });
+  labelNode.textContent = label;
+  group.append(labelNode);
+}
+
+function drawObject(group, scenario) {
+  if (scenario.objectShape === "arrow") {
+    drawArrow(group, scenario.objectBase, scenario.objectTop, "object", "Object");
+    return;
+  }
+  drawSymbol(group, scenario.objectBase, scenario.hoCm, "object", scenario.objectShape, "Object");
+}
+
+function drawImage(group, scenario, className) {
+  if (scenario.objectShape === "arrow") {
+    drawArrow(group, { x: scenario.imageTop.x, y: VIEW.axisY }, scenario.imageTop, className, "Image");
+    return;
+  }
+  drawSymbol(group, { x: scenario.imageTop.x, y: VIEW.axisY }, scenario.image.hi, className, scenario.objectShape, "Image");
 }
 
 function addMarker(group, x, label, y = VIEW.axisY) {
@@ -321,7 +418,7 @@ function drawOpticElements(root, scenario) {
 }
 
 function raySpec(scenario) {
-  const { optic, absF, objectTop } = scenario;
+  const { absF, objectTop } = scenario;
   const opticKey = ui.opticType.value;
   const fPx = absF * SCALE.x;
   const focusLeft = { x: VIEW.opticX - fPx, y: VIEW.axisY };
@@ -382,10 +479,6 @@ function raySpec(scenario) {
     const hit3 = pointAtX(objectTop, focusRight, VIEW.opticX);
     rayData.incoming[2] = { from: objectTop, hit: hit3 };
     rayData.outgoing[2] = { mode: "parallel", y: hit3.y, side: "left" };
-  }
-
-  if (optic.kind === "mirror") {
-    return rayData;
   }
 
   return rayData;
@@ -456,6 +549,90 @@ function drawRays(root, scenario) {
   }
 }
 
+function drawExtraRays(root, scenario) {
+  if (!scenario.showExtraRays || scenario.extraRayCount <= 0 || scenario.image.isInfinity || !scenario.imageTop) {
+    return;
+  }
+
+  const imagePoint = scenario.imageTop;
+  const raySide = scenario.optic.kind === "lens" ? "right" : "left";
+  const isVirtual = scenario.image.imageType === "virtual";
+
+  for (let i = 0; i < scenario.extraRayCount; i += 1) {
+    const spread = 26;
+    const offset = (i - (scenario.extraRayCount - 1) / 2) * spread;
+    const hit = {
+      x: VIEW.opticX,
+      y: clamp(scenario.objectTop.y + offset, VIEW.yMin + 20, VIEW.yMax - 20)
+    };
+
+    root.append(
+      createSvg("line", {
+        x1: scenario.objectTop.x,
+        y1: scenario.objectTop.y,
+        x2: hit.x,
+        y2: hit.y,
+        class: "ray extra"
+      })
+    );
+
+    if (!isVirtual) {
+      root.append(
+        createSvg("line", {
+          x1: hit.x,
+          y1: hit.y,
+          x2: imagePoint.x,
+          y2: imagePoint.y,
+          class: "ray extra"
+        })
+      );
+      continue;
+    }
+
+    const xEdge = raySide === "right" ? VIEW.xMax : VIEW.xMin;
+    const physicalEnd = pointAtX(imagePoint, hit, xEdge);
+
+    root.append(
+      createSvg("line", {
+        x1: hit.x,
+        y1: hit.y,
+        x2: physicalEnd.x,
+        y2: physicalEnd.y,
+        class: "ray extra"
+      })
+    );
+
+    root.append(
+      createSvg("line", {
+        x1: hit.x,
+        y1: hit.y,
+        x2: imagePoint.x,
+        y2: imagePoint.y,
+        class: "ray extension"
+      })
+    );
+  }
+}
+
+function drawObjectHandles(root, scenario) {
+  root.append(
+    createSvg("circle", {
+      cx: scenario.objectBase.x,
+      cy: scenario.objectBase.y,
+      r: 7,
+      class: "handle",
+      "data-handle": "base"
+    }),
+    createSvg("circle", {
+      cx: scenario.objectTop.x,
+      cy: scenario.objectTop.y,
+      r: 7,
+      class: "handle",
+      "data-handle": "tip"
+    })
+  );
+}
+
 function drawScene(scenario) {
   clearChildren(ui.svg);
 
@@ -466,7 +643,7 @@ function drawScene(scenario) {
 
   const objectGroup = createSvg("g", {});
   layer.append(objectGroup);
-  drawArrow(objectGroup, scenario.objectBase, scenario.objectTop, "object", "Object");
+  drawObject(objectGroup, scenario);
 
   layer.append(
     createSvg("line", {
@@ -479,27 +656,16 @@ function drawScene(scenario) {
   );
 
   drawRays(layer, scenario);
-
-  const visibleRayCount = scenario.showRay.filter(Boolean).length;
-  if (visibleRayCount === 0) {
-    const noRayLabel = createSvg("text", {
-      x: 500,
-      y: 62,
-      class: "value-label",
-      "text-anchor": "middle"
-    });
-    noRayLabel.textContent = "No rays shown. Use Start Guide or the ray checkboxes.";
-    layer.append(noRayLabel);
-  }
+  drawExtraRays(layer, scenario);
 
   if (!scenario.image.isInfinity && scenario.imageTop) {
     const x = scenario.imageTop.x;
     const y = scenario.imageTop.y;
-    const isVisible = x > VIEW.xMin + 4 && x < VIEW.xMax - 4 && y > VIEW.yMin - 120 && y < VIEW.yMax + 120;
+    const isVisible = x > VIEW.xMin + 4 && x < VIEW.xMax - 4 && y > VIEW.yMin - 140 && y < VIEW.yMax + 140;
 
     if (isVisible) {
       const imgClass = `image ${scenario.image.imageType === "real" ? "real" : "virtual"}`;
-      drawArrow(layer, { x, y: VIEW.axisY }, { x, y }, imgClass, "Image");
+      drawImage(layer, scenario, imgClass);
       layer.append(
         createSvg("line", {
           x1: x,
@@ -532,6 +698,8 @@ function drawScene(scenario) {
     infLabel.textContent = "Image forms at infinity (parallel output rays).";
     layer.append(infLabel);
   }
+
+  drawObjectHandles(layer, scenario);
 }
 
 function locationText(scenario) {
@@ -552,6 +720,7 @@ function safeHide(value) {
 function renderMetrics(scenario) {
   const rows = [];
   rows.push(["Element", scenario.optic.label]);
+  rows.push(["Shape", scenario.objectShape === "k" ? "Letter K" : scenario.objectShape === "smiley" ? "Smiley" : "Arrow"]);
   rows.push(["f", `${scenario.fCm.toFixed(2)} cm`]);
   rows.push(["do", fmt(scenario.doCm)]);
   rows.push(["ho", fmt(scenario.hoCm)]);
@@ -620,7 +789,9 @@ function renderGuidance(scenario) {
 function updateValueLabels() {
   ui.focalValue.textContent = `${Number(ui.focalLength.value).toFixed(1)} cm`;
   ui.distanceValue.textContent = `${Number(ui.objectDistance.value).toFixed(1)} cm`;
-  ui.heightValue.textContent = `${Number(ui.objectHeight.value).toFixed(1)} cm`;
+  const signPrefix = ui.invertObject.checked ? "-" : "";
+  ui.heightValue.textContent = `${signPrefix}${Number(ui.objectHeight.value).toFixed(1)} cm`;
+  ui.extraRayCountValue.textContent = String(Number(ui.extraRayCount.value));
 }
 
 function update() {
@@ -631,11 +802,21 @@ function update() {
   renderGuidance(scenario);
 }
 
+function markInteraction() {
+  if (challenge.active) {
+    challenge.revealed = false;
+  }
+}
+
 function resetScenario() {
   ui.opticType.value = "convexLens";
   ui.focalLength.value = "8";
   ui.objectDistance.value = "16";
-  ui.objectHeight.value = "4";
+  ui.objectHeight.value = "5";
+  ui.objectShape.value = "arrow";
+  ui.invertObject.checked = false;
+  ui.extraRays.checked = false;
+  ui.extraRayCount.value = "2";
   applyGuideStep(1);
 
   challenge.active = false;
@@ -687,12 +868,13 @@ function newChallenge() {
     tries += 1;
   }
 
-  const hoCm = pickRandom(2, 6, 0.5);
+  const hoCm = pickRandom(2, 10, 0.5);
 
   ui.opticType.value = opticKey;
   ui.focalLength.value = String(absF);
   ui.objectDistance.value = String(doCm);
   ui.objectHeight.value = String(hoCm);
+  ui.invertObject.checked = Math.random() < 0.3;
 
   challenge.active = true;
   challenge.revealed = false;
@@ -780,37 +962,88 @@ function applyGuideStep(step) {
   ui.ray3.checked = true;
 }
 
+function syncGuideFromRayToggles() {
+  if (!ui.ray1.checked && !ui.ray2.checked && !ui.ray3.checked) {
+    guide.step = 0;
+  } else if (ui.ray1.checked && !ui.ray2.checked && !ui.ray3.checked) {
+    guide.step = 1;
+  } else if (ui.ray1.checked && ui.ray2.checked && !ui.ray3.checked) {
+    guide.step = 2;
+  } else if (ui.ray1.checked && ui.ray2.checked && ui.ray3.checked) {
+    guide.step = 3;
+  } else {
+    guide.step = 4;
+  }
+}
+
+function svgPointFromEvent(evt) {
+  const point = ui.svg.createSVGPoint();
+  point.x = evt.clientX;
+  point.y = evt.clientY;
+  return point.matrixTransform(ui.svg.getScreenCTM().inverse());
+}
+
+function startDrag(evt) {
+  const handle = evt.target?.dataset?.handle;
+  if (!handle) return;
+  dragState.activeHandle = handle;
+  dragState.pointerId = evt.pointerId;
+  ui.svg.setPointerCapture(evt.pointerId);
+  evt.preventDefault();
+}
+
+function moveDrag(evt) {
+  if (!dragState.activeHandle || evt.pointerId !== dragState.pointerId) return;
+
+  const pt = svgPointFromEvent(evt);
+  const { min: doMin, max: doMax } = getSliderLimits(ui.objectDistance);
+  const { max: hoMax } = getSliderLimits(ui.objectHeight);
+
+  const xClamped = clamp(pt.x, VIEW.xMin + 30, VIEW.opticX - doMin * SCALE.x);
+  const doCm = clamp((VIEW.opticX - xClamped) / SCALE.x, doMin, doMax);
+  ui.objectDistance.value = String(doCm);
+
+  if (dragState.activeHandle === "tip") {
+    const yClamped = clamp(pt.y, VIEW.yMin + 15, VIEW.yMax - 15);
+    let signedHo = (VIEW.axisY - yClamped) / SCALE.y;
+    if (Math.abs(signedHo) < 0.5) {
+      signedHo = signedHo < 0 ? -0.5 : 0.5;
+    }
+    signedHo = clamp(signedHo, -hoMax, hoMax);
+    setObjectHeightSigned(signedHo);
+  }
+
+  markInteraction();
+  update();
+}
+
+function endDrag(evt) {
+  if (evt.pointerId !== dragState.pointerId) return;
+  dragState.activeHandle = null;
+  dragState.pointerId = null;
+}
+
 [
   ui.opticType,
   ui.focalLength,
   ui.objectDistance,
   ui.objectHeight,
+  ui.objectShape,
+  ui.invertObject,
+  ui.extraRays,
+  ui.extraRayCount,
   ui.ray1,
   ui.ray2,
   ui.ray3
 ].forEach((control) => {
   control.addEventListener("input", () => {
-    if (challenge.active) {
-      challenge.revealed = false;
-    }
+    markInteraction();
     if (control === ui.opticType) {
       applyGuideStep(1);
     }
-
     if (control === ui.ray1 || control === ui.ray2 || control === ui.ray3) {
-      if (!ui.ray1.checked && !ui.ray2.checked && !ui.ray3.checked) {
-        guide.step = 0;
-      } else if (ui.ray1.checked && !ui.ray2.checked && !ui.ray3.checked) {
-        guide.step = 1;
-      } else if (ui.ray1.checked && ui.ray2.checked && !ui.ray3.checked) {
-        guide.step = 2;
-      } else if (ui.ray1.checked && ui.ray2.checked && ui.ray3.checked) {
-        guide.step = 3;
-      } else {
-        guide.step = 4;
-      }
+      syncGuideFromRayToggles();
     }
-
     update();
   });
 });
@@ -840,10 +1073,15 @@ ui.themeToggleButton.addEventListener("click", () => {
   applyTheme(nextTheme);
 });
 
+ui.svg.addEventListener("pointerdown", startDrag);
+ui.svg.addEventListener("pointermove", moveDrag);
+ui.svg.addEventListener("pointerup", endDrag);
+ui.svg.addEventListener("pointercancel", endDrag);
+
 ui.resetBtn.addEventListener("click", resetScenario);
 ui.challengeBtn.addEventListener("click", newChallenge);
 ui.checkBtn.addEventListener("click", evaluatePrediction);
 ui.revealBtn.addEventListener("click", revealAnswer);
 
 initTheme();
-update();
+resetScenario();

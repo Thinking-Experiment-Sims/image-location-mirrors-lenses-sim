@@ -57,8 +57,32 @@
           </label>
 
           <label for="objectHeight">
-            Object Height ho: <span id="heightValue">4.0 cm</span>
-            <input id="objectHeight" type="range" min="1" max="8" step="0.5" value="4" />
+            Object Height ho: <span id="heightValue">5.0 cm</span>
+            <input id="objectHeight" type="range" min="1" max="12" step="0.5" value="5" />
+          </label>
+
+          <label for="objectShape">
+            Object Shape
+            <select id="objectShape">
+              <option value="arrow">Arrow</option>
+              <option value="k">Letter K</option>
+              <option value="smiley">Smiley Face</option>
+            </select>
+          </label>
+
+          <label class="toggle-label" for="invertObject">
+            <input id="invertObject" type="checkbox" />
+            Invert object
+          </label>
+
+          <label for="extraRayCount">
+            Extra Rays: <span id="extraRayCountValue">2</span>
+            <input id="extraRayCount" type="range" min="0" max="8" step="1" value="2" />
+          </label>
+
+          <label class="toggle-label" for="extraRays">
+            <input id="extraRays" type="checkbox" />
+            Show extra rays
           </label>
 
           <fieldset class="ray-toggles">
@@ -68,6 +92,7 @@
             <label class="toggle-label" for="ray3"><input id="ray3" type="checkbox" /> Ray 3</label>
           </fieldset>
         </div>
+        <p class="hint">Drag the object base or tip directly on the diagram to move and resize it.</p>
 
         <div class="button-row">
           <button type="button" id="resetBtn">Reset Scenario</button>
