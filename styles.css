@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
 
 :root {
   --bg-950: #090b0f;
@@ -97,7 +97,8 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-family: "Cormorant Garamond", "Palatino Linotype", serif;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  font-weight: 700;
 }
 
 .shell {
@@ -446,8 +447,14 @@ body[data-theme="light"] .practice-inline {
 
 .practice-field {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.28rem;
   align-content: start;
+}
+
+.practice-field input,
+.practice-field select {
+  width: 100%;
 }
 
 .practice-actions {
@@ -569,6 +576,17 @@ body[data-theme="light"] .scene .image.virtual {
   opacity: 0.92;
 }
 
+.scene .ray.extra {
+  stroke: #ead397;
+  stroke-width: 1.8;
+  opacity: 0.9;
+}
+
+body[data-theme="light"] .scene .ray.extra {
+  stroke: #0a6d88;
+  opacity: 0.65;
+}
+
 .scene .guide {
   stroke: rgba(229, 204, 143, 0.22);
   stroke-width: 1;
@@ -577,6 +595,22 @@ body[data-theme="light"] .scene .image.virtual {
 
 body[data-theme="light"] .scene .guide {
   stroke: rgba(18, 49, 64, 0.2);
+}
+
+.scene .smiley-image {
+  pointer-events: none;
+}
+
+.scene .handle {
+  fill: rgba(216, 183, 103, 0.2);
+  stroke: var(--gold-300);
+  stroke-width: 1.8;
+  cursor: pointer;
+}
+
+body[data-theme="light"] .scene .handle {
+  fill: rgba(15, 126, 155, 0.18);
+  stroke: #0f7e9b;
 }
 
 @media (max-width: 1180px) {
