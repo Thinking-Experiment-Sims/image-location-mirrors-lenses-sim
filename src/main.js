@@ -51,7 +51,6 @@ const OPTICS = {
 };
 
 const ui = {
-  themeToggleButton: document.getElementById("themeToggleButton"),
   opticType: document.getElementById("opticType"),
   focalLength: document.getElementById("focalLength"),
   objectDistance: document.getElementById("objectDistance"),
@@ -101,29 +100,13 @@ const dragState = {
   pointerId: null
 };
 
-function applyTheme(theme) {
-  const safeTheme = theme === "light" ? "light" : "dark";
-  document.body.dataset.theme = safeTheme;
-  ui.themeToggleButton.textContent = safeTheme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme";
-  ui.themeToggleButton.setAttribute("aria-pressed", safeTheme === "dark" ? "true" : "false");
+function initTheme() {
+  document.body.dataset.theme = "light";
   try {
-    localStorage.setItem("image-lab-theme", safeTheme);
+    localStorage.removeItem("image-lab-theme");
   } catch {
     // Ignore storage failures.
   }
-}
-
-function initTheme() {
-  let theme = "dark";
-  try {
-    const stored = localStorage.getItem("image-lab-theme");
-    if (stored === "dark" || stored === "light") {
-      theme = stored;
-    }
-  } catch {
-    theme = "dark";
-  }
-  applyTheme(theme);
 }
 
 function clamp(v, min, max) {
@@ -1066,11 +1049,6 @@ ui.showAllGuideBtn.addEventListener("click", () => {
 ui.resetGuideBtn.addEventListener("click", () => {
   applyGuideStep(0);
   update();
-});
-
-ui.themeToggleButton.addEventListener("click", () => {
-  const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-  applyTheme(nextTheme);
 });
 
 ui.svg.addEventListener("pointerdown", startDrag);
